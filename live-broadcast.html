@@ -1,0 +1,1788 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>رَصْد - البث المباشر</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- مكتبات البث المباشر -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flv.js@latest/dist/flv.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Tajawal', sans-serif;
+        }
+
+        :root {
+            --primary: #0f172a;
+            --secondary: #1e293b;
+            --accent: #3b82f6;
+            --accent-dark: #2563eb;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #06b6d4;
+            --light: #f1f5f9;
+            --dark: #020617;
+            --border: rgba(148, 163, 184, 0.2);
+            --card-bg: rgba(30, 41, 59, 0.8);
+            --hover: rgba(59, 130, 246, 0.1);
+        }
+
+        /* Card Styles */
+        .card {
+            background: var(--secondary);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .broadcast-card {
+            height: calc(100vh - 90px);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(15, 23, 42, 0.5);
+        }
+
+        .card-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .card-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .card-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-action-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: rgba(30, 41, 59, 0.8);
+            color: var(--light);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .card-action-btn:hover {
+            background: var(--hover);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .card-body {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Camera Search Box */
+        .camera-search-box {
+            position: relative;
+        }
+
+        .camera-search-input {
+            width: 200px;
+            padding: 8px 35px 8px 12px;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--light);
+            font-size: 13px;
+            font-family: 'Tajawal', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        .camera-search-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
+        .camera-search-input::placeholder {
+            color: rgba(148, 163, 184, 0.5);
+        }
+
+        .camera-search-icon {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(148, 163, 184, 0.5);
+            font-size: 12px;
+        }
+
+        /* Broadcast Legend */
+        .broadcast-legend {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 15px;
+            backdrop-filter: blur(10px);
+            z-index: 100;
+        }
+
+        .broadcast-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+
+        .broadcast-legend-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .broadcast-legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        body {
+            background-color: var(--primary);
+            color: var(--light);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Header */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            background-color: var(--secondary);
+            border-bottom: 1px solid var(--border);
+            height: 70px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .back-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 20px;
+            background-color: rgba(59, 130, 246, 0.1);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--light);
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background-color: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .page-title {
+            font-size: 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .page-title i {
+            color: var(--danger);
+        }
+
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            background-color: rgba(239, 68, 68, 0.15);
+            border-radius: 20px;
+            font-size: 12px;
+            color: var(--danger);
+        }
+
+        .live-indicator i {
+            animation: pulse-live 1.5s infinite;
+        }
+
+        @keyframes pulse-live {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.3;
+            }
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .view-toggle {
+            display: flex;
+            background-color: rgba(30, 41, 59, 0.8);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .view-btn {
+            padding: 10px 15px;
+            background: none;
+            border: none;
+            color: var(--light);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .view-btn:hover {
+            background-color: var(--hover);
+        }
+
+        .view-btn.active {
+            background-color: var(--accent);
+        }
+
+        .header-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(30, 41, 59, 0.8);
+            border: 1px solid var(--border);
+            color: var(--light);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .header-btn:hover {
+            background-color: var(--hover);
+            border-color: var(--accent);
+        }
+
+        .header-btn.recording {
+            background-color: var(--danger);
+            border-color: var(--danger);
+            animation: pulse-record 1s infinite;
+        }
+
+        @keyframes pulse-record {
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+            }
+
+            50% {
+                box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+            }
+        }
+
+        /* Main Content */
+        .main-content {
+            height: calc(100vh - 70px);
+            display: flex;
+        }
+
+        /* Video Grid */
+        .video-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 4px;
+            padding: 4px;
+            background-color: var(--dark);
+        }
+
+        .video-grid.grid-1 {
+            grid-template-columns: 1fr;
+            grid-template-rows: 1fr;
+        }
+
+        .video-grid.grid-1 .video-feed:not(.active) {
+            display: none;
+        }
+
+        .video-grid.grid-4 {
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+        }
+
+        .video-grid.grid-6 {
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+        }
+
+        .video-feed {
+            position: relative;
+            background-color: var(--primary);
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .video-feed:hover {
+            outline: 2px solid var(--accent);
+        }
+
+        .video-feed.active {
+            outline: 3px solid var(--accent);
+        }
+
+        /* Video Placeholder */
+        .video-placeholder {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        }
+
+        .video-placeholder i {
+            font-size: 48px;
+            color: var(--accent);
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        .video-placeholder span {
+            color: rgba(241, 245, 249, 0.5);
+            font-size: 14px;
+        }
+
+        /* Video Header */
+        .video-header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 12px 15px;
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0.8) 0%, transparent 100%);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .video-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .video-info i {
+            color: var(--accent);
+        }
+
+        .video-info span {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .video-live {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            background-color: var(--danger);
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .video-live i {
+            animation: pulse-live 1.5s infinite;
+        }
+
+        /* Video Footer */
+        .video-footer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 12px 15px;
+            background: linear-gradient(0deg, rgba(0, 0, 0, 0.8) 0%, transparent 100%);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .video-stats {
+            display: flex;
+            gap: 15px;
+        }
+
+        .video-stat {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+            color: rgba(241, 245, 249, 0.8);
+        }
+
+        .video-stat i {
+            color: var(--accent);
+        }
+
+        .video-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .video-control-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            border: none;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: var(--light);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .video-control-btn:hover {
+            background-color: var(--accent);
+        }
+
+        /* Detection Boxes */
+        .detection-box {
+            position: absolute;
+            border: 2px solid;
+            border-radius: 4px;
+            z-index: 5;
+        }
+
+        .detection-box.danger {
+            border-color: var(--danger);
+            background-color: rgba(239, 68, 68, 0.1);
+        }
+
+        .detection-box.warning {
+            border-color: var(--warning);
+            background-color: rgba(245, 158, 11, 0.1);
+        }
+
+        .detection-box.info {
+            border-color: var(--info);
+            background-color: rgba(6, 182, 212, 0.1);
+        }
+
+        .detection-label {
+            position: absolute;
+            top: -22px;
+            right: 0;
+            padding: 2px 8px;
+            border-radius: 4px 4px 0 0;
+            font-size: 10px;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .detection-box.danger .detection-label {
+            background-color: var(--danger);
+        }
+
+        .detection-box.warning .detection-label {
+            background-color: var(--warning);
+        }
+
+        .detection-box.info .detection-label {
+            background-color: var(--info);
+        }
+
+        /* Sidebar */
+        .sidebar-panel {
+            width: 320px;
+            background-color: var(--secondary);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sidebar-title {
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sidebar-title i {
+            color: var(--accent);
+        }
+
+        .sidebar-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+
+        /* Camera List */
+        .camera-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .camera-item {
+            background-color: rgba(15, 23, 42, 0.5);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .camera-item:hover {
+            border-color: var(--accent);
+            background-color: var(--hover);
+        }
+
+        .camera-item.active {
+            border-color: var(--accent);
+            background-color: rgba(59, 130, 246, 0.15);
+        }
+
+        .camera-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .camera-name {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+        }
+
+        .camera-name i {
+            color: var(--accent);
+        }
+
+        .camera-status {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 500;
+        }
+
+        .camera-status.online {
+            background-color: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+        }
+
+        .camera-status.offline {
+            background-color: rgba(148, 163, 184, 0.15);
+            color: #94a3b8;
+        }
+
+        .camera-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .camera-detail {
+            font-size: 11px;
+            color: rgba(241, 245, 249, 0.6);
+        }
+
+        .camera-detail span {
+            color: var(--light);
+            font-weight: 500;
+        }
+
+        /* Recording Section */
+        .recording-section {
+            padding: 15px;
+            border-top: 1px solid var(--border);
+        }
+
+        .recording-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .recording-title i {
+            color: var(--danger);
+        }
+
+        .recording-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .recording-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            background-color: rgba(15, 23, 42, 0.5);
+            border-radius: 8px;
+            font-size: 12px;
+        }
+
+        .recording-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .recording-info i {
+            color: var(--danger);
+            animation: pulse-live 1.5s infinite;
+        }
+
+        .recording-time {
+            font-family: 'Consolas', monospace;
+            color: var(--danger);
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .sidebar-panel {
+                display: none;
+            }
+        }
+
+        /* ==================== Stream Player Styles ==================== */
+        .video-player {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+            background: #000;
+        }
+
+        .video-feed.streaming .video-player {
+            display: block;
+        }
+
+        .video-feed.streaming .video-placeholder {
+            display: none;
+        }
+
+        /* Stream Status Indicator */
+        .stream-status {
+            position: absolute;
+            top: 50px;
+            left: 15px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            z-index: 15;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .stream-status.connecting {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .stream-status.connected {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .stream-status.disconnected {
+            background: rgba(148, 163, 184, 0.2);
+            color: #94a3b8;
+            border: 1px solid rgba(148, 163, 184, 0.3);
+        }
+
+        .stream-status.error {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .stream-status.reconnecting {
+            background: rgba(59, 130, 246, 0.2);
+            color: var(--accent);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        /* Connect Stream Button */
+        .connect-stream-btn {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 13px;
+            font-family: 'Tajawal', sans-serif;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .connect-stream-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(59, 130, 246, 0.4);
+        }
+
+        /* ==================== Stream Settings Modal ==================== */
+        .stream-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 10000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+        }
+
+        .stream-modal.show {
+            display: flex;
+        }
+
+        .stream-modal-content {
+            background: var(--secondary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            width: 600px;
+            max-width: 95%;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.95);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .stream-modal-header {
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .stream-modal-header h3 {
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .stream-modal-header h3 i {
+            color: var(--accent);
+        }
+
+        .stream-modal-close {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            border: none;
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .stream-modal-close:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        .stream-modal-body {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .stream-config {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        .stream-config label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 10px;
+            color: var(--light);
+        }
+
+        .stream-config-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .stream-config input[type="text"] {
+            flex: 1;
+            padding: 12px 15px;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--light);
+            font-size: 13px;
+            font-family: 'Consolas', monospace;
+            direction: ltr;
+            text-align: left;
+        }
+
+        .stream-config input[type="text"]:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
+        .stream-config input[type="text"]::placeholder {
+            color: rgba(148, 163, 184, 0.5);
+        }
+
+        .stream-type-select {
+            padding: 12px 15px;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--light);
+            font-size: 13px;
+            font-family: 'Tajawal', sans-serif;
+            cursor: pointer;
+            min-width: 120px;
+        }
+
+        .stream-type-select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .stream-modal-footer {
+            padding: 20px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .stream-modal-footer button {
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            font-size: 14px;
+            font-family: 'Tajawal', sans-serif;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-save-config {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-save-config:hover {
+            background: var(--accent-dark);
+        }
+
+        .btn-connect-all {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-connect-all:hover {
+            background: #059669;
+        }
+
+        .btn-disconnect-all {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--danger);
+            color: var(--danger);
+        }
+
+        .btn-disconnect-all:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        /* Test Stream Links */
+        .test-streams {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 10px;
+        }
+
+        .test-streams-title {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--accent);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .test-stream-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 6px;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+
+        .test-stream-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .test-stream-url {
+            font-family: 'Consolas', monospace;
+            color: rgba(241, 245, 249, 0.7);
+            direction: ltr;
+            font-size: 11px;
+        }
+
+        .test-stream-copy {
+            padding: 5px 10px;
+            background: var(--accent);
+            border: none;
+            border-radius: 4px;
+            color: white;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .test-stream-copy:hover {
+            background: var(--accent-dark);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Header -->
+    <header class="page-header">
+        <div class="header-right">
+            <a href="index.html" class="back-btn">
+                <i class="fas fa-arrow-right"></i>
+                <span>العودة للوحة التحكم</span>
+            </a>
+            <div class="page-title">
+                <i class="fas fa-video"></i>
+                <span>البث المباشر</span>
+            </div>
+            <div class="live-indicator">
+                <i class="fas fa-circle"></i>
+                <span>4 كاميرات نشطة</span>
+            </div>
+        </div>
+        <div class="header-left">
+            <div class="view-toggle">
+                <button class="view-btn" data-grid="1" title="عرض مفرد">
+                    <i class="fas fa-square"></i>
+                </button>
+                <button class="view-btn active" data-grid="4" title="عرض رباعي">
+                    <i class="fas fa-th-large"></i>
+                </button>
+                <button class="view-btn" data-grid="6" title="عرض سداسي">
+                    <i class="fas fa-th"></i>
+                </button>
+            </div>
+            <button class="header-btn" id="streamSettingsBtn" title="إعدادات البث">
+                <i class="fas fa-satellite-dish"></i>
+            </button>
+            <button class="header-btn" id="recordBtn" title="تسجيل">
+                <i class="fas fa-circle"></i>
+            </button>
+            <button class="header-btn" id="screenshotBtn" title="لقطة شاشة">
+                <i class="fas fa-camera"></i>
+            </button>
+            <button class="header-btn" id="fullscreenBtn" title="ملء الشاشة">
+                <i class="fas fa-expand"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Broadcast Card -->
+        <div class="card broadcast-card">
+            <div class="card-header">
+                <div class="card-title">
+                    <div class="card-icon"><i class="fas fa-video"></i></div>
+                    <span>البث المباشر</span>
+                </div>
+                <div class="card-actions">
+                    <div class="camera-search-box">
+                        <input type="text" id="cameraSearchInput" class="camera-search-input"
+                            placeholder="ابحث عن كاميرا..." autocomplete="off">
+                        <i class="fas fa-search camera-search-icon"></i>
+                    </div>
+                    <div class="view-toggle">
+                        <button class="view-btn" data-grid="1" title="عرض مفرد">
+                            <i class="fas fa-square"></i>
+                        </button>
+                        <button class="view-btn active" data-grid="4" title="عرض رباعي">
+                            <i class="fas fa-th-large"></i>
+                        </button>
+                        <button class="view-btn" data-grid="6" title="عرض سداسي">
+                            <i class="fas fa-th"></i>
+                        </button>
+                    </div>
+                    <button class="card-action-btn" id="streamSettingsBtn" title="إعدادات البث">
+                        <i class="fas fa-satellite-dish"></i>
+                    </button>
+                    <button class="card-action-btn" id="recordBtn" title="تسجيل">
+                        <i class="fas fa-circle"></i>
+                    </button>
+                    <button class="card-action-btn" id="screenshotBtn" title="لقطة شاشة">
+                        <i class="fas fa-camera"></i>
+                    </button>
+                    <button class="card-action-btn" id="fullscreenBtn" title="ملء الشاشة">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Video Grid -->
+                <div class="video-grid grid-4" id="videoGrid">
+                    <!-- Video Feed 1 -->
+                    <div class="video-feed active" data-camera="1">
+                        <video class="video-player" autoplay muted playsinline></video>
+                        <div class="video-placeholder">
+                            <i class="fas fa-drone"></i>
+                            <span>طائرة #1 - القطاع الشرقي</span>
+                            <button class="connect-stream-btn" data-camera="1">
+                                <i class="fas fa-plug"></i> اتصال بالبث
+                            </button>
+                        </div>
+                        <div class="video-header">
+                            <div class="video-info">
+                                <i class="fas fa-drone"></i>
+                                <span>طائرة #1 - القطاع الشرقي</span>
+                            </div>
+                            <div class="video-live">
+                                <i class="fas fa-circle"></i>
+                                مباشر
+                            </div>
+                        </div>
+                        <div class="detection-box danger" style="left: 40%; top: 35%; width: 18%; height: 28%;">
+                            <div class="detection-label">شخص مسلح 92%</div>
+                        </div>
+                        <div class="detection-box info" style="left: 15%; top: 45%; width: 12%; height: 22%;">
+                            <div class="detection-label">شخص 87%</div>
+                        </div>
+                        <div class="video-footer">
+                            <div class="video-stats">
+                                <div class="video-stat">
+                                    <i class="fas fa-mountain"></i>
+                                    <span>85م</span>
+                                </div>
+                                <div class="video-stat">
+                                    <i class="fas fa-battery-three-quarters"></i>
+                                    <span>85%</span>
+                                </div>
+                                <div class="video-stat">
+                                    <i class="fas fa-signal"></i>
+                                    <span>قوي</span>
+                                </div>
+                            </div>
+                            <div class="video-controls">
+                                <button class="video-control-btn" title="تسجيل">
+                                    <i class="fas fa-circle"></i>
+                                </button>
+                                <button class="video-control-btn" title="لقطة">
+                                    <i class="fas fa-camera"></i>
+                                </button>
+                                <button class="video-control-btn" title="ملء الشاشة">
+                                    <i class="fas fa-expand"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Video Feed 2 -->
+                    <div class="video-feed" data-camera="2">
+                        <video class="video-player" autoplay muted playsinline></video>
+                        <div class="video-placeholder">
+                            <i class="fas fa-drone"></i>
+                            <span>طائرة #2 - القطاع الشمالي</span>
+                            <button class="connect-stream-btn" data-camera="2">
+                                <i class="fas fa-plug"></i> اتصال بالبث
+                            </button>
+                        </div>
+                        <div class="video-header">
+                            <div class="video-info">
+                                <i class="fas fa-drone"></i>
+                                <span>طائرة #2 - القطاع الشمالي</span>
+                            </div>
+                            <div class="video-live">
+                                <i class="fas fa-circle"></i>
+                                مباشر
+                            </div>
+                        </div>
+                        <div class="detection-box warning" style="left: 30%; top: 40%; width: 15%; height: 25%;">
+                            <div class="detection-label">حقيبة مشبوهة 78%</div>
+                        </div>
+                        <div class="video-footer">
+                            <div class="video-stats">
+                                <div class="video-stat">
+                                    <i class="fas fa-mountain"></i>
+                                    <span>120م</span>
+                                </div>
+                                <div class="video-stat">
+                                    <i class="fas fa-battery-half"></i>
+                                    <span>55%</span>
+                                </div>
+                                <div class="video-stat">
+                                    <i class="fas fa-signal"></i>
+                                    <span>متوسط</span>
+                                </div>
+                            </div>
+                            <div class="video-controls">
+                                <button class="video-control-btn" title="تسجيل">
+                                    <i class="fas fa-circle"></i>
+                                </button>
+                                <button class="video-control-btn" title="لقطة">
+                                    <i class="fas fa-camera"></i>
+                                </button>
+                                <button class="video-control-btn" title="ملء الشاشة">
+                                    <i class="fas fa-expand"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Video Feed 3 -->
+                    <div class="video-feed" data-camera="3">
+                        <video class="video-player" autoplay muted playsinline></video>
+                        <div class="video-placeholder">
+                            <i class="fas fa-drone"></i>
+                            <span>طائرة #4 - القطاع الغربي</span>
+                            <button class="connect-stream-btn" data-camera="3">
+                                <i class="fas fa-plug"></i> اتصال بالبث
+                            </button>
+                        </div>
+                        <div class="video-header">
+                            <div class="video-info">
+                                <i class="fas fa-drone"></i>
+                                <span>طائرة #4 - القطاع الغربي</span>
+                            </div>
+                            <div class="video-live">
+                                <i class="fas fa-circle"></i>
+                                مباشر
+                            </div>
+                        </div>
+                        <div class="detection-box info" style="left: 20%; top: 35%; width: 13%; height: 24%;">
+                            <div class="detection-label">شخص 91%</div>
+                        </div>
+                        <div class="detection-box info" style="left: 55%; top: 40%; width: 12%; height: 22%;">
+                            <div class="detection-label">شخص 89%</div>
+                        </div>
+                        <div class="video-footer">
+                            <div class="video-stats">
+                                <div class="video-stat">
+                                    <i class="fas fa-mountain"></i>
+                                    <span>95م</span>
+                                </div>
+                                <div class="video-stat">
+                                    <i class="fas fa-battery-three-quarters"></i>
+                                    <span>75%</span>
+                                </div>
+                                <div class="video-stat">
+                                    <i class="fas fa-signal"></i>
+                                    <span>قوي</span>
+                                </div>
+                            </div>
+                            <div class="video-controls">
+                                <button class="video-control-btn" title="تسجيل">
+                                    <i class="fas fa-circle"></i>
+                                </button>
+                                <button class="video-control-btn" title="لقطة">
+                                    <i class="fas fa-camera"></i>
+                                </button>
+                                <button class="video-control-btn" title="ملء الشاشة">
+                                    <i class="fas fa-expand"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Video Feed 4 -->
+                    <div class="video-feed" data-camera="4">
+                        <video class="video-player" autoplay muted playsinline></video>
+                        <div class="video-placeholder">
+                            <i class="fas fa-drone"></i>
+                            <span>طائرة #6 - القطاع الجنوبي</span>
+                            <button class="connect-stream-btn" data-camera="4">
+                                <i class="fas fa-plug"></i> اتصال بالبث
+                            </button>
+                        </div>
+                        <div class="video-header">
+                            <div class="video-info">
+                                <i class="fas fa-drone"></i>
+                                <span>طائرة #6 - القطاع الجنوبي</span>
+                            </div>
+                            <div class="video-live">
+                                <i class="fas fa-circle"></i>
+                                مباشر
+                            </div>
+                        </div>
+                        <div class="video-footer">
+                            <div class="video-stats">
+                                <div class="video-stat">
+                                    <i class="fas fa-mountain"></i>
+                                    <span>70م</span>
+                                </div>
+                                <div class="video-stat">
+                                    <i class="fas fa-battery-full"></i>
+                                    <span>92%</span>
+                                </div>
+                                <div class="video-stat">
+                                    <i class="fas fa-signal"></i>
+                                    <span>قوي</span>
+                                </div>
+                            </div>
+                            <div class="video-controls">
+                                <button class="video-control-btn" title="تسجيل">
+                                    <i class="fas fa-circle"></i>
+                                </button>
+                                <button class="video-control-btn" title="لقطة">
+                                    <i class="fas fa-camera"></i>
+                                </button>
+                                <button class="video-control-btn" title="ملء الشاشة">
+                                    <i class="fas fa-expand"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Broadcast Legend -->
+                <div class="broadcast-legend">
+                    <div class="broadcast-legend-item">
+                        <div class="broadcast-legend-color" style="background-color: #10b981;"></div>
+                        <span>متصل</span>
+                    </div>
+                    <div class="broadcast-legend-item">
+                        <div class="broadcast-legend-color" style="background-color: #f59e0b;"></div>
+                        <span>جاري الاتصال</span>
+                    </div>
+                    <div class="broadcast-legend-item">
+                        <div class="broadcast-legend-color" style="background-color: #ef4444;"></div>
+                        <span>خطأ</span>
+                    </div>
+                    <div class="broadcast-legend-item">
+                        <div class="broadcast-legend-color" style="background-color: #6b7280;"></div>
+                        <span>غير متصل</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <aside class="sidebar-panel">
+            <div class="sidebar-header">
+                <h2 class="sidebar-title">
+                    <i class="fas fa-camera"></i>
+                    الكاميرات المتاحة
+                </h2>
+            </div>
+            <div class="sidebar-body">
+                <div class="camera-list">
+                    <div class="camera-item active" data-camera="1">
+                        <div class="camera-header">
+                            <div class="camera-name">
+                                <i class="fas fa-video"></i>
+                                طائرة #1
+                            </div>
+                            <span class="camera-status online">متصل</span>
+                        </div>
+                        <div class="camera-details">
+                            <div class="camera-detail">الموقع: <span>القطاع الشرقي</span></div>
+                            <div class="camera-detail">الجودة: <span>4K</span></div>
+                            <div class="camera-detail">الارتفاع: <span>85م</span></div>
+                            <div class="camera-detail">الاتصال: <span>قوي</span></div>
+                        </div>
+                    </div>
+                    <div class="camera-item" data-camera="2">
+                        <div class="camera-header">
+                            <div class="camera-name">
+                                <i class="fas fa-video"></i>
+                                طائرة #2
+                            </div>
+                            <span class="camera-status online">متصل</span>
+                        </div>
+                        <div class="camera-details">
+                            <div class="camera-detail">الموقع: <span>القطاع الشمالي</span></div>
+                            <div class="camera-detail">الجودة: <span>4K</span></div>
+                            <div class="camera-detail">الارتفاع: <span>120م</span></div>
+                            <div class="camera-detail">الاتصال: <span>متوسط</span></div>
+                        </div>
+                    </div>
+                    <div class="camera-item" data-camera="3">
+                        <div class="camera-header">
+                            <div class="camera-name">
+                                <i class="fas fa-video"></i>
+                                طائرة #4
+                            </div>
+                            <span class="camera-status online">متصل</span>
+                        </div>
+                        <div class="camera-details">
+                            <div class="camera-detail">الموقع: <span>القطاع الغربي</span></div>
+                            <div class="camera-detail">الجودة: <span>1080p</span></div>
+                            <div class="camera-detail">الارتفاع: <span>95م</span></div>
+                            <div class="camera-detail">الاتصال: <span>قوي</span></div>
+                        </div>
+                    </div>
+                    <div class="camera-item" data-camera="4">
+                        <div class="camera-header">
+                            <div class="camera-name">
+                                <i class="fas fa-video"></i>
+                                طائرة #6
+                            </div>
+                            <span class="camera-status online">متصل</span>
+                        </div>
+                        <div class="camera-details">
+                            <div class="camera-detail">الموقع: <span>القطاع الجنوبي</span></div>
+                            <div class="camera-detail">الجودة: <span>4K</span></div>
+                            <div class="camera-detail">الارتفاع: <span>70م</span></div>
+                            <div class="camera-detail">الاتصال: <span>قوي</span></div>
+                        </div>
+                    </div>
+                    <div class="camera-item">
+                        <div class="camera-header">
+                            <div class="camera-name">
+                                <i class="fas fa-video"></i>
+                                طائرة #3
+                            </div>
+                            <span class="camera-status offline">غير متصل</span>
+                        </div>
+                        <div class="camera-details">
+                            <div class="camera-detail">الحالة: <span>قيد الشحن</span></div>
+                            <div class="camera-detail">البطارية: <span>35%</span></div>
+                        </div>
+                    </div>
+                    <div class="camera-item">
+                        <div class="camera-header">
+                            <div class="camera-name">
+                                <i class="fas fa-video"></i>
+                                طائرة #5
+                            </div>
+                            <span class="camera-status offline">غير متصل</span>
+                        </div>
+                        <div class="camera-details">
+                            <div class="camera-detail">الحالة: <span>صيانة</span></div>
+                            <div class="camera-detail">الوقت المتوقع: <span>2 ساعة</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="recording-section">
+                <div class="recording-title">
+                    <i class="fas fa-record-vinyl"></i>
+                    التسجيلات النشطة
+                </div>
+                <div class="recording-list" id="recordingList">
+                    <div class="recording-item">
+                        <div class="recording-info">
+                            <i class="fas fa-circle"></i>
+                            <span>لا توجد تسجيلات نشطة</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        // View toggle
+        document.querySelectorAll('.view-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+
+                const grid = document.getElementById('videoGrid');
+                grid.className = 'video-grid grid-' + this.dataset.grid;
+            });
+        });
+
+        // Video feed selection
+        document.querySelectorAll('.video-feed').forEach(feed => {
+            feed.addEventListener('click', function () {
+                document.querySelectorAll('.video-feed').forEach(f => f.classList.remove('active'));
+                this.classList.add('active');
+
+                // Update camera list
+                const cameraId = this.dataset.camera;
+                document.querySelectorAll('.camera-item').forEach(item => {
+                    item.classList.toggle('active', item.dataset.camera === cameraId);
+                });
+            });
+        });
+
+        // Camera item selection
+        document.querySelectorAll('.camera-item[data-camera]').forEach(item => {
+            item.addEventListener('click', function () {
+                const cameraId = this.dataset.camera;
+                if (!cameraId) return;
+
+                document.querySelectorAll('.camera-item').forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+
+                document.querySelectorAll('.video-feed').forEach(feed => {
+                    feed.classList.toggle('active', feed.dataset.camera === cameraId);
+                });
+            });
+        });
+
+        // Record button
+        let isRecording = false;
+        let recordingTimer = null;
+        let recordingSeconds = 0;
+
+        document.getElementById('recordBtn').addEventListener('click', function () {
+            isRecording = !isRecording;
+            this.classList.toggle('recording', isRecording);
+
+            const recordingList = document.getElementById('recordingList');
+
+            if (isRecording) {
+                recordingSeconds = 0;
+                recordingList.innerHTML = `
+                    <div class="recording-item">
+                        <div class="recording-info">
+                            <i class="fas fa-circle"></i>
+                            <span>جميع الكاميرات</span>
+                        </div>
+                        <div class="recording-time" id="recordingTime">00:00</div>
+                    </div>
+                `;
+
+                recordingTimer = setInterval(() => {
+                    recordingSeconds++;
+                    const mins = Math.floor(recordingSeconds / 60).toString().padStart(2, '0');
+                    const secs = (recordingSeconds % 60).toString().padStart(2, '0');
+                    document.getElementById('recordingTime').textContent = `${mins}:${secs}`;
+                }, 1000);
+            } else {
+                clearInterval(recordingTimer);
+                recordingList.innerHTML = `
+                    <div class="recording-item">
+                        <div class="recording-info">
+                            <i class="fas fa-circle" style="animation: none; color: var(--success);"></i>
+                            <span>لا توجد تسجيلات نشطة</span>
+                        </div>
+                    </div>
+                `;
+                alert('تم حفظ التسجيل بنجاح');
+            }
+        });
+
+        // Screenshot button
+        document.getElementById('screenshotBtn').addEventListener('click', function () {
+            alert('تم التقاط صورة من جميع الكاميرات');
+        });
+
+        // Fullscreen
+        document.getElementById('fullscreenBtn').addEventListener('click', function () {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+                this.innerHTML = '<i class="fas fa-compress"></i>';
+            } else {
+                document.exitFullscreen();
+                this.innerHTML = '<i class="fas fa-expand"></i>';
+            }
+        });
+
+        // Individual video controls
+        document.querySelectorAll('.video-control-btn').forEach(btn => {
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                const title = this.getAttribute('title');
+                const feed = this.closest('.video-feed');
+                const feedName = feed.querySelector('.video-info span').textContent;
+
+                if (title === 'تسجيل') {
+                    this.classList.toggle('recording');
+                    alert(this.classList.contains('recording') ? `بدء تسجيل ${feedName}` : `إيقاف تسجيل ${feedName}`);
+                } else if (title === 'لقطة') {
+                    alert(`تم التقاط صورة من ${feedName}`);
+                } else if (title === 'ملء الشاشة') {
+                    feed.requestFullscreen();
+                }
+            });
+        });
+    </script>
+
+    <!-- Stream Settings Modal -->
+    <div class="stream-modal" id="streamSettingsModal">
+        <div class="stream-modal-content">
+            <div class="stream-modal-header">
+                <h3><i class="fas fa-satellite-dish"></i> إعدادات البث المباشر</h3>
+                <button class="stream-modal-close" id="closeStreamModal">&times;</button>
+            </div>
+            <div class="stream-modal-body">
+                <!-- Camera 1 Config -->
+                <div class="stream-config" data-camera="1">
+                    <label><i class="fas fa-drone"></i> طائرة #1 - القطاع الشرقي</label>
+                    <div class="stream-config-row">
+                        <input type="text" placeholder="http://localhost:8080/hls/stream1.m3u8" />
+                        <select class="stream-type-select">
+                            <option value="auto">تلقائي</option>
+                            <option value="hls">HLS (.m3u8)</option>
+                            <option value="flv">FLV</option>
+                            <option value="mp4">MP4</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Camera 2 Config -->
+                <div class="stream-config" data-camera="2">
+                    <label><i class="fas fa-drone"></i> طائرة #2 - القطاع الشمالي</label>
+                    <div class="stream-config-row">
+                        <input type="text" placeholder="http://localhost:8080/hls/stream2.m3u8" />
+                        <select class="stream-type-select">
+                            <option value="auto">تلقائي</option>
+                            <option value="hls">HLS (.m3u8)</option>
+                            <option value="flv">FLV</option>
+                            <option value="mp4">MP4</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Camera 3 Config -->
+                <div class="stream-config" data-camera="3">
+                    <label><i class="fas fa-drone"></i> طائرة #4 - القطاع الغربي</label>
+                    <div class="stream-config-row">
+                        <input type="text" placeholder="http://localhost:8080/hls/stream3.m3u8" />
+                        <select class="stream-type-select">
+                            <option value="auto">تلقائي</option>
+                            <option value="hls">HLS (.m3u8)</option>
+                            <option value="flv">FLV</option>
+                            <option value="mp4">MP4</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Camera 4 Config -->
+                <div class="stream-config" data-camera="4">
+                    <label><i class="fas fa-drone"></i> طائرة #6 - القطاع الجنوبي</label>
+                    <div class="stream-config-row">
+                        <input type="text" placeholder="http://localhost:8080/hls/stream4.m3u8" />
+                        <select class="stream-type-select">
+                            <option value="auto">تلقائي</option>
+                            <option value="hls">HLS (.m3u8)</option>
+                            <option value="flv">FLV</option>
+                            <option value="mp4">MP4</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Test Streams -->
+                <div class="test-streams">
+                    <div class="test-streams-title">
+                        <i class="fas fa-flask"></i> روابط بث للاختبار
+                    </div>
+                    <div class="test-stream-item">
+                        <span class="test-stream-url">https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8</span>
+                        <button class="test-stream-copy"
+                            data-url="https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8">نسخ</button>
+                    </div>
+                    <div class="test-stream-item">
+                        <span class="test-stream-url">https://cph-p2p-msl.akamaized.net/hls/live/.../master.m3u8</span>
+                        <button class="test-stream-copy"
+                            data-url="https://cph-p2p-msl.akamaized.net/hls/live/2000341/test/master.m3u8">نسخ</button>
+                    </div>
+                </div>
+            </div>
+            <div class="stream-modal-footer">
+                <button class="btn-disconnect-all" id="disconnectAllStreams">
+                    <i class="fas fa-unlink"></i> قطع الكل
+                </button>
+                <button class="btn-save-config" id="saveStreamConfig">
+                    <i class="fas fa-save"></i> حفظ الإعدادات
+                </button>
+                <button class="btn-connect-all" id="connectAllStreams">
+                    <i class="fas fa-play"></i> اتصال بالكل
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stream Manager Script -->
+    <script src="js/stream-manager.js"></script>
+    <script>
+        // Stream Settings Modal Controls
+        const streamModal = document.getElementById('streamSettingsModal');
+        const streamSettingsBtn = document.getElementById('streamSettingsBtn');
+        const closeStreamModalBtn = document.getElementById('closeStreamModal');
+
+        // Open modal
+        streamSettingsBtn.addEventListener('click', function () {
+            streamModal.classList.add('show');
+            // Apply saved config to UI
+            if (window.streamManager) {
+                window.streamManager.applyConfigToUI();
+            }
+        });
+
+        // Close modal
+        closeStreamModalBtn.addEventListener('click', function () {
+            streamModal.classList.remove('show');
+        });
+
+        // Close on overlay click
+        streamModal.addEventListener('click', function (e) {
+            if (e.target === streamModal) {
+                streamModal.classList.remove('show');
+            }
+        });
+
+        // Save configuration
+        document.getElementById('saveStreamConfig').addEventListener('click', function () {
+            if (window.streamManager) {
+                window.streamManager.saveConfig();
+                alert('تم حفظ إعدادات البث بنجاح');
+            }
+        });
+
+        // Connect all streams
+        document.getElementById('connectAllStreams').addEventListener('click', async function () {
+            if (window.streamManager) {
+                window.streamManager.saveConfig();
+                await window.streamManager.connectAll();
+                streamModal.classList.remove('show');
+            }
+        });
+
+        // Disconnect all streams
+        document.getElementById('disconnectAllStreams').addEventListener('click', function () {
+            if (window.streamManager) {
+                window.streamManager.disconnectAll();
+            }
+        });
+
+        // Copy test stream URL
+        document.querySelectorAll('.test-stream-copy').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const url = this.dataset.url;
+                navigator.clipboard.writeText(url).then(() => {
+                    this.textContent = 'تم!';
+                    setTimeout(() => {
+                        this.textContent = 'نسخ';
+                    }, 1500);
+                });
+            });
+        });
+
+        // Connect stream buttons in video placeholders
+        document.querySelectorAll('.connect-stream-btn').forEach(btn => {
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                // Open settings modal
+                streamModal.classList.add('show');
+            });
+        });
+
+        // Load saved config on page load
+        window.addEventListener('load', function () {
+            if (window.streamManager) {
+                window.streamManager.applyConfigToUI();
+            }
+        });
+    </script>
+
+    <script src="js/rasd-utils.js"></script>
+</body>
+
+</html>
